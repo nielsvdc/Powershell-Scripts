@@ -1,2 +1,2 @@
 # Powershell-Scripts
-Usefull Powershell scripts to manage AD, Exchange and more
+Usefull Powershell scripts to manage AD, Exchange, Windows and more
