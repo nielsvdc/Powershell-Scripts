@@ -1,3 +1,12 @@
+<#
+    Use this script for Azure VM's with SQL Server to be able to use the temporary storage
+    to hold the SQL Server tempdb files.
+    Set the SQL Server services to Manual and create a scheduler task to run this script
+    at the startup of the VM.
+    Change the location of the tempdb files in SQL Server.
+    Now the tempdb can make use of the SSD speed of the temporary storage.
+#>
+
 function Wait-ForServiceStatus($searchString, $status)
 {
     # Get all services where DisplayName matches $searchString and loop through each of them.
