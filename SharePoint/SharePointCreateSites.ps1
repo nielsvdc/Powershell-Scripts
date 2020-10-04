@@ -1,5 +1,5 @@
 ﻿$csvFilePath = "D:\TEMP\SP\sites.csv" # CSV file containing 2 columns: SiteUrlName,SiteTitle
-$logFilePath = "D:\TEMP\SP\seinpost.log" # Log output file
+$logFilePath = "D:\TEMP\SP\output.log" # Log output file
 $tenantName = "demotenant" # Name of the SharePoint tenant
 $adminUser = "admin@$tenantName.onmicrosoft.com" # Login name of the administrator user that can create sites
 $siteMembersGroupName = "SG - Test Members" # Leave empty when not used
