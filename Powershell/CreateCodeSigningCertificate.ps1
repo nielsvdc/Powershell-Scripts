@@ -1,4 +1,4 @@
-###################################################################################
+<###################################################################################
 # NAME:   CreateCodeSigningCertificate.ps1
 # AUTHOR: Niels van de Coevering
 # DATE:   4 October 2020
@@ -7,7 +7,7 @@
 # computer. Use this if you are using a Powershell script on a single machine.
 # For using a signed Powershell script on multiple machines, a public code signing
 # certificate is recommended.
-###################################################################################
+###################################################################################>
 
 # Check for code signing certificate for local machine saved in Trusted Root Certification Authorities
 #Get-ChildItem -Path Cert:\LocalMachine\Root -CodeSigningCert

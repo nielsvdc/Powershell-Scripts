@@ -1,4 +1,24 @@
-﻿$csvFilePath = "D:\TEMP\SP\sites.csv" # CSV file containing 2 columns: SiteUrlName,SiteTitle
+﻿<##################################################################################
+# NAME:   SharePointCreateSites.ps1
+# AUTHOR: Niels van de Coevering
+# DATE:   4 October 2020
+#
+# COMMENTS: This script will creates new SharePoint sites specified in a CSV, 
+# associate these sites with a hub and assign Office users or groups to 
+# site groups.
+# The CSV file should contain 2 columns: SiteUrlName,SiteTitle. When the site title
+# it not specified, the site name is used as site title.
+#
+# CSV EXAMPLE:
+# SiteUrlName,SiteTitle
+# TestSite1,Test site 1
+# TestSite2,Test site 2
+# TestSite3,
+# TestSite4,
+# TestSite5,Another site title
+##################################################################################>
+
+$csvFilePath = "D:\TEMP\SP\sites.csv" # CSV file containing 2 columns: SiteUrlName,SiteTitle
 $logFilePath = "D:\TEMP\SP\output.log" # Log output file
 $tenantName = "demotenant" # Name of the SharePoint tenant
 $adminUser = "admin@$tenantName.onmicrosoft.com" # Login name of the administrator user that can create sites

@@ -1,11 +1,11 @@
-###################################################################################
+<###################################################################################
 # NAME:   SignPowershellScript.ps1
 # AUTHOR: Niels van de Coevering
 # DATE:   4 October 2020
 #
 # COMMENTS: This script will use a code signing certificate found in on a Windows
 # computer to sign a specified Powershell script.
-###################################################################################
+###################################################################################>
 
 # Sign a Powershell script
 $scriptPath = "C:\TEMP\"
