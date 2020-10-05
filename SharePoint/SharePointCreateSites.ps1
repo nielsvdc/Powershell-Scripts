@@ -20,7 +20,7 @@
 
 $csvFilePath = "C:\TEMP\SP\sites.csv" # CSV file containing 2 columns: SiteUrlName,SiteTitle
 $logFilePath = "C:\TEMP\SP\output.log" # Log output file
-$tenantName = "nielsvdc" # Name of the SharePoint tenant
+$tenantName = "demotenant" # Name of the SharePoint tenant
 $adminUser = "admin@$tenantName.onmicrosoft.com" # Login name of the administrator user that can create sites
 $hubUrl = "https://$tenantName.sharepoint.com" # URL for the hub site
 $siteMembersGroupName = "SG - Test Members" # Leave empty when not used
