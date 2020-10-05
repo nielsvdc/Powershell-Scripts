@@ -31,6 +31,7 @@ $quickLaunchItemsToDelete = @("Site contents", "Notebook", "Pages")
 
 $template = "STS#3" # STS#3 = Team site (no Office 365 group). You can check the available templates using the Get-SPOWebTemplate command
 $storageQuota = 1000 # 
+$waitSeconds = 90 # Second to wait for SharePoint sites te be created, before doing other things
 
 #region Functions
 #####################################################################################################
@@ -442,7 +443,6 @@ foreach ($site in $sites) {
 }
 
 # Wait for site to get active
-$waitSeconds = 0
 Write-Host "`nInfo: Hang on for $waitSeconds seconds, while SharePoint creates the sites for us...`n" -ForegroundColor Green
 Start-Sleep -Seconds $waitSeconds
 
