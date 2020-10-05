@@ -18,17 +18,19 @@
 # TestSite5,Another site title
 ##################################################################################>
 
-$csvFilePath = "D:\TEMP\SP\sites.csv" # CSV file containing 2 columns: SiteUrlName,SiteTitle
-$logFilePath = "D:\TEMP\SP\output.log" # Log output file
-$tenantName = "demotenant" # Name of the SharePoint tenant
+$csvFilePath = "C:\TEMP\SP\sites.csv" # CSV file containing 2 columns: SiteUrlName,SiteTitle
+$logFilePath = "C:\TEMP\SP\output.log" # Log output file
+$tenantName = "nielsvdc" # Name of the SharePoint tenant
 $adminUser = "admin@$tenantName.onmicrosoft.com" # Login name of the administrator user that can create sites
+$hubUrl = "https://$tenantName.sharepoint.com" # URL for the hub site
 $siteMembersGroupName = "SG - Test Members" # Leave empty when not used
 $siteVisitorsGroupName = "" # Leave empty when not used
 $siteOwnersGroupName = "" # Leave empty when not used
-$storageQuota = 1000
+$documentLibraryToAdd = "Archive" # Add a single new document library to the new sites
+$quickLaunchItemsToDelete = @("Site contents", "Notebook", "Pages")
 
-$hubUrl = "https://$tenantName.sharepoint.com"
 $template = "STS#3" # STS#3 = Team site (no Office 365 group). You can check the available templates using the Get-SPOWebTemplate command
+$storageQuota = 1000 # 
 
 #region Functions
 #####################################################################################################
@@ -52,7 +54,7 @@ function Import-KrSpoModule {
 function Connect-KrSharePoint {
     # Let the user fill in their password in the PowerShell window
     Write-Host "#############################################################" -ForegroundColor Green
-    $password = Read-Host "Please enter the password for $adminUser" -AsSecureString
+    $global:password = Read-Host "Please enter the password for $adminUser" -AsSecureString
  
     # Set credentials
     $credentials = New-Object -TypeName System.Management.Automation.PSCredential -argumentlist $adminUser, $password
@@ -65,6 +67,17 @@ function Connect-KrSharePoint {
     }
     catch {
         Write-Host "Error: Could not connect to Office 365" -foregroundcolor red
+        break
+    }
+}
+
+function Test-KrHubSite {
+    if ($null -eq (Get-SPOSite -Identity $hubUrl)) {
+        Write-Host "Error: The defnied hub site '$hubUrl' does not exist in SharePoint." -ForegroundColor Red
+        break
+    }
+    if ($null -eq (Get-SPOHubSite -Identity $hubUrl)) {
+        Write-Host "Error: The defnied hub site '$hubUrl' is not marked as a hub site in SharePoint." -ForegroundColor Red
         break
     }
 }
@@ -101,6 +114,46 @@ function New-KrSpoSite {
     }
 
     return $url
+}
+
+function New-KrSpoDocumentLib {
+    param (
+        [Parameter(Mandatory = $true)]
+        [String]
+        $SiteUrl,
+
+        [Parameter(Mandatory = $true)]
+        [String]
+        $Title,
+
+        [String]
+        $Description
+    )
+    $listTemplate = 101 # Document library
+
+    # set SharePoint Online credentials
+    $SPOCredentials = New-Object Microsoft.SharePoint.Client.SharePointOnlineCredentials($global:adminUrl, $global:password)
+         
+    # Creating client context object
+    $context = New-Object Microsoft.SharePoint.Client.ClientContext($SiteURL)
+    $context.credentials = $SPOCredentials
+     
+    #create list using ListCreationInformation object (lci)
+    $lci = New-Object Microsoft.SharePoint.Client.ListCreationInformation
+    $lci.Title = $Title
+    $lci.Description = $Description
+    $lci.TemplateType = $listTemplate
+    $list = $context.Web.Lists.Add($lci)
+    $context.Load($list)
+
+    #send the request containing all operations to the server
+    try {
+        $context.ExecuteQuery()
+        Write-Host "Info: Created $($listTitle)" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Info: $($_.Exception.Message)" -ForegroundColor Red
+    }  
 }
 
 function Add-KrHubSiteAssociation {
@@ -167,6 +220,108 @@ function Add-KrSiteGroupUsers {
     }
 }
 
+function New-DocumentLibrary {
+    param (
+        [Parameter(Mandatory = $true)]
+        [String]
+        $SiteUrl,
+
+        [Parameter(Mandatory = $true)]
+        [String]
+        $Admin,
+
+        [Parameter(Mandatory = $true)]
+        [System.Security.SecureString]
+        $Password,
+
+        [Parameter(Mandatory = $true)]
+        [String]
+        $Title,
+
+        [String]
+        $Description
+    )
+
+    # Creating client context object
+    $context = New-Object Microsoft.SharePoint.Client.ClientContext($SiteUrl)
+    $SPOCredentials = New-Object Microsoft.SharePoint.Client.SharePointOnlineCredentials($Admin, $Password)
+    $context.credentials = $SPOCredentials
+    $site = $context.Web
+    $context.Load($site)
+
+    # Check if document library already exists
+    $listExists = $true
+    try {
+        $myList = $context.Web.Lists.GetByTitle($Title)
+        $context.Load($myList)
+        $context.ExecuteQuery()
+    }
+    catch {
+        $listExists = $false
+    }
+
+    if (-not($listExists)) {
+        # Create new archive document library
+        $myList = New-Object Microsoft.SharePoint.Client.ListCreationInformation
+        $myList.Title = $Title
+        $myList.Description = $Description
+        $myList.TemplateType = 101 # Document library
+        $newList = $context.Web.Lists.Add($myList)
+        $context.Load($newList)
+        $context.ExecuteQuery()
+
+        # Update archive library and show in quick launch menu
+        $myList = $context.Web.Lists.GetByTitle($Title)
+        $context.Load($myList)
+        $myList.OnQuickLaunch = $true
+        $myList.Update()
+        $context.Load($myList)
+        $context.ExecuteQuery()
+    }
+}
+
+function Remove-SiteQuickLaunchItems {
+    param (
+        [Parameter(Mandatory = $true)]
+        [String]
+        $SiteUrl,
+
+        [Parameter(Mandatory = $true)]
+        [String]
+        $Admin,
+
+        [Parameter(Mandatory = $true)]
+        [System.Security.SecureString]
+        $Password,
+
+        [Parameter(Mandatory = $true)]
+        [String[]]
+        $ItemsToDelete
+    )
+
+    # Creating client context object
+    $context = New-Object Microsoft.SharePoint.Client.ClientContext($SiteUrl)
+    $SPOCredentials = New-Object Microsoft.SharePoint.Client.SharePointOnlineCredentials($Admin, $global:password)
+    $context.credentials = $SPOCredentials
+    $site = $context.Web
+    $context.Load($site)
+    $context.ExecuteQuery()
+
+    # Remove 
+    $quickLaunchNodes = $site.Navigation.QuickLaunch
+    $context.Load($quickLaunchNodes)
+    $context.ExecuteQuery()
+
+    for ($i = $quickLaunchNodes.Count - 1; $i -ge 0; $i--) {
+        switch ($quickLaunchNodes[$i].Title) {
+            { $ItemsToDelete -contains $_ } {
+                $quickLaunchNodes[$i].DeleteObject()
+                $context.ExecuteQuery()
+            }
+        }
+    }
+}
+
 function Test-KrLogFile {
     if (Test-Path -Path $logFilePath) {
         do {
@@ -227,6 +382,23 @@ function Write-KrCreateSiteLog {
     }
 }
 
+function Get-KrSiteArray {
+    # Check for delimiter comma or semicolon in csv file
+    $csvContent = Get-Content -Path $csvFilePath
+    $commaCnt = ($csvContent.ToCharArray() | Where-Object { $_ -eq ',' } | Measure-Object).Count
+    $semiColonCnt = ($csvContent.ToCharArray() | Where-Object { $_ -eq ';' } | Measure-Object).Count
+    $delimiter = if ($semiColonCnt -gt $commaCnt) { ';' } else { ',' }
+
+    # Read site list from CSV file
+    $siteArray = Import-Csv -Path $csvFilePath -Delimiter $delimiter
+    $siteArray | Add-Member -MemberType NoteProperty -Name "SiteUrl" -Value $null
+    $siteArray | Add-Member -MemberType NoteProperty -Name "Status" -Value $null
+    $siteArray | Add-Member -MemberType NoteProperty -Name "StartTime" -Value $null
+    $siteArray | Add-Member -MemberType NoteProperty -Name "Duration" -Value $null
+
+    return $siteArray
+}
+
 #####################################################################################################
 #endregion Functions
 
@@ -245,15 +417,16 @@ if (-not(Test-Path -Path $csvFilePath)) {
 # Test if log file exists
 Test-KrLogFile
 
+# Read CSV file into array
+$sites = Get-KrSiteArray
+
 # Connect to customer SharePoint Online
 Connect-KrSharePoint
 
-# Read site list from CSV file
-$sites = Import-Csv -Path $csvFilePath
-$sites | Add-Member -MemberType NoteProperty -Name "SiteUrl" -Value $null
-$sites | Add-Member -MemberType NoteProperty -Name "Status" -Value $null
-$sites | Add-Member -MemberType NoteProperty -Name "StartTime" -Value $null
-$sites | Add-Member -MemberType NoteProperty -Name "Duration" -Value $null
+# Check if defined hub site is a hub site
+Test-KrHubSite
+
+# TODO: Test if user groups exists
 
 # For each site line in CSV, create a SharePoint site
 foreach ($site in $sites) {
@@ -267,10 +440,9 @@ foreach ($site in $sites) {
     $site.Status = (Get-SPOSite -Filter { Url -eq $siteUrl }).Status
     Write-KrCreateSiteLog -FileName $logFilePath -SiteName $site.SiteUrlName -SiteTitle $site.SiteTitle -Siteurl $siteUrl -Status $site.Status
 }
-#Write-KrCreateSiteLog -FileName $logFilePath -SiteName "TestSite11" -SiteTitle "Test site 11" -Siteurl "https://test" -Status "Retrying" -Duration 10
 
 # Wait for site to get active
-$waitSeconds = 90
+$waitSeconds = 0
 Write-Host "`nInfo: Hang on for $waitSeconds seconds, while SharePoint creates the sites for us...`n" -ForegroundColor Green
 Start-Sleep -Seconds $waitSeconds
 
@@ -288,6 +460,8 @@ do {
                 try {
                     Add-KrHubSiteAssociation -SiteUrl $siteUrl -HubUrl $hubUrl
                     Add-KrSiteGroupUsers -SiteUrl $siteUrl -SiteTitle $site.SiteTitle
+                    New-DocumentLibrary -SiteUrl $siteUrl -Admin $adminUser -Password $password -Title $documentLibraryToAdd
+                    Remove-SiteQuickLaunchItems -SiteUrl $siteUrl -Admin $adminUser -Password $password -ItemsToDelete $quickLaunchItemsToDelete
                     $site.Status = "Finished"
 
                     $site.Duration = [Math]::Round((New-TimeSpan -Start $site.StartTime -End (Get-Date)).TotalSeconds)
