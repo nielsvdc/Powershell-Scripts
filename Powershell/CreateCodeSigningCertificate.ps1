@@ -8,6 +8,7 @@
 # For using a signed Powershell script on multiple machines, a public code signing
 # certificate is recommended.
 ###################################################################################>
+#Requires -Version 5.1
 
 # Check for code signing certificate for local machine saved in Trusted Root Certification Authorities
 #Get-ChildItem -Path Cert:\LocalMachine\Root -CodeSigningCert
@@ -21,12 +22,12 @@ $replaceCert = $true
 
 # Leave this as-is, if you don't know what you are doing
 $certSubject = "Localhost code signing"
-$certPath = "Cert:\CurrentUser\My"
+$certPath = "Cert:\LocalMachine\Root"
 
 # Run script code
 $validUntil = (Get-Date).AddYears(5)
 if ($replaceCert) {
-    Get-ChildItem -Path "Cert:\LocalMachine\Root" -CodeSigningCert | Where-Object { $_.Subject -eq "CN=$certSubject" } | Remove-Item
+    Get-ChildItem -Path $certPath -CodeSigningCert | Where-Object { $_.Subject -eq "CN=$certSubject" } | Remove-Item
 }
 $cert = New-SelfSignedCertificate -CertStoreLocation $certPath -Type CodeSigningCert -NotAfter $validUntil -Subject $certSubject
 if ($null -ne $cert) {
@@ -36,6 +37,6 @@ if ($null -ne $cert) {
     $pfxPath = Join-Path -Path $pfxExportPath -ChildPath $pfxFileName
     Export-PfxCertificate -Cert $path -FilePath $pfxPath -Password $passwd | Out-Null
     Get-ChildItem -Path $certPath -CodeSigningCert | Where-Object { $_.Subject -eq "CN=$certSubject" } | Remove-Item
-    Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\LocalMachine\Root" -Password $passwd | Out-Null
+    Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation $certPath -Password $passwd | Out-Null
     Get-ChildItem $pfxPath | Remove-Item
 }
