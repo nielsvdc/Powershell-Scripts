@@ -64,10 +64,10 @@ function Connect-KrSharePoint {
     # Connect to to Office 365
     try {
         Connect-SPOService -Url $adminUrl -Credential $credentials
-        Write-Host "Info: Connected succesfully to Office 365" -foregroundcolor green
+        Write-Host "Info: Connected succesfully to Office 365" -foregroundcolor Green
     }
     catch {
-        Write-Host "Error: Could not connect to Office 365" -foregroundcolor red
+        Write-Host "Error: Could not connect to Office 365" -foregroundcolor Red
         break
     }
 }
@@ -107,11 +107,14 @@ function New-KrSpoSite {
         Write-Host "Info: Start creating $($SiteTitle)..." -ForegroundColor Green
         New-SPOSite -Url $url -title $SiteTitle -Owner $adminUser -StorageQuota $storageQuota -Template $template -NoWait
     }
-    elseif ($null -eq $siteExists) {
-        Write-Host "Info: $($url) already exists" -ForegroundColor Red
+    elseif ($null -ne $siteExists) {
+        Write-Host "Info: $($url) already exists" -ForegroundColor Blue
+    }
+    elseif ($null -ne $siteExistsInRecycleBin) {
+        Write-Host "Warning: $($url) still exists in the recyclebin" -ForegroundColor Yellow
     }
     else {
-        Write-Host "Info: $($url) still exists in the recyclebin" -ForegroundColor Red
+        Write-Host "Error: Something went wrong detecting site $($url)" -ForegroundColor Red
     }
 
     return $url
@@ -153,7 +156,7 @@ function New-KrSpoDocumentLib {
         Write-Host "Info: Created $($listTitle)" -ForegroundColor Green
     }
     catch {
-        Write-Host "Info: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
     }  
 }
 
@@ -443,10 +446,10 @@ foreach ($site in $sites) {
 }
 
 # Wait for site to get active
-Write-Host "`nInfo: Hang on for $waitSeconds seconds, while SharePoint creates the sites for us...`n" -ForegroundColor Green
+Write-Host "`nInfo: Hang on for $waitSeconds seconds, while SharePoint creates the sites for us...`n" -ForegroundColor Blue
 Start-Sleep -Seconds $waitSeconds
 
-Write-Host "`nInfo: Let's start associating sites to a hub and assigning site group users..." -ForegroundColor Green
+Write-Host "`nInfo: Let's start associating sites to a hub and assigning site group users..." -ForegroundColor Blue
 do {
     # Reset check
     $allSitesFinished = $true
@@ -484,7 +487,7 @@ do {
 
 } while (-not($allSitesFinished))
 
-Write-Host "`nInfo: All sites have been created." -ForegroundColor Green
+Write-Host "`nInfo: All sites have been created." -ForegroundColor Blue
 Write-Host "`nCheck the log file '$logFilePath' for information." -ForegroundColor Green
 Write-Host "#############################################################" -ForegroundColor Green
 Import-Csv -Path $logFilePath -Delimiter "`t" | Format-Table
