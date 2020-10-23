@@ -28,7 +28,8 @@ $certMyPath = "Cert:\LocalMachine\My"
 $validUntil = (Get-Date).AddYears(5)
 if ($replaceCert) {
     # When specifief, remove existing certificate
-    Get-ChildItem -Path $certPath -CodeSigningCert | Where-Object { $_.Subject -eq "CN=$certSubject" } | Remove-Item
+    Get-ChildItem -Path "Cert:\LocalMachine\Root" -CodeSigningCert | Where-Object { $_.Subject -eq "CN=$certSubject" } | Remove-Item
+    Get-ChildItem -Path "Cert:\LocalMachine\TrustedPublisher" -CodeSigningCert | Where-Object { $_.Subject -eq "CN=$certSubject" } | Remove-Item
 }
 $cert = New-SelfSignedCertificate -CertStoreLocation $certMyPath -Type CodeSigningCert -NotAfter $validUntil -Subject $certSubject
 if ($null -ne $cert) {
