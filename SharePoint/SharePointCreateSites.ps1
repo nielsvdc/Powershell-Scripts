@@ -35,7 +35,16 @@ $waitSeconds = 90 # Second to wait for SharePoint sites te be created, before do
 
 #region Functions
 #####################################################################################################
-function Import-KrSpoModule {
+
+<#
+.SYNOPSIS
+    Import PowerShell module for SharePoint.
+.DESCRIPTION
+    Checks if the PowerShell module for SharePoint is installed. If not a message with an URL is displayed to download
+    and installed the module in the local machine.
+    When the module is installed the module will be imported to be able to use the module's commands.
+#>
+function Import-SpoModule {
     $moduleName = "Microsoft.Online.SharePoint.PowerShell"
     if (-not(Get-module -ListAvailable -Name $moduleName -ErrorAction SilentlyContinue)) {
         Write-Error "It seems that the PowerShell module for SharePoint is not installed. Goto https://www.microsoft.com/en-us/download/details.aspx?id=35588 to download and install this module."
@@ -52,7 +61,15 @@ function Import-KrSpoModule {
     }
 }
 
-function Connect-KrSharePoint {
+<#
+.SYNOPSIS
+    Create a connection to SharePoint Online.
+.DESCRIPTION
+    Ask for the admin user's password and use the credential to connect to the SharePoint Online admin environment.
+.NOTES
+    The provided password is saved to the scripts password variable for usage in other functions.
+#>
+function Connect-SharePointOnline {
     # Let the user fill in their password in the PowerShell window
     Write-Host "#############################################################" -ForegroundColor Green
     $global:password = Read-Host "Please enter the password for $adminUser" -AsSecureString
@@ -72,13 +89,33 @@ function Connect-KrSharePoint {
     }
 }
 
-function Test-KrHubSite {
-    if ($null -eq (Get-SPOSite -Identity $hubUrl)) {
-        Write-Host "Error: The defnied hub site '$hubUrl' does not exist in SharePoint." -ForegroundColor Red
+<#
+.SYNOPSIS
+    Check if SharePoint hub site exists.
+.DESCRIPTION
+    Check if the 
+.EXAMPLE
+    PS C:\> <example usage>
+    Explanation of what the example does
+.INPUTS
+    Inputs (if any)
+.OUTPUTS
+    Output (if any)
+.NOTES
+    General notes
+#>
+function Test-SpoHubSite {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Url
+    )
+    if ($null -eq (Get-SPOSite -Identity $Url)) {
+        Write-Host "Error: The defnied hub site '$Url' does not exist in SharePoint." -ForegroundColor Red
         break
     }
-    if ($null -eq (Get-SPOHubSite -Identity $hubUrl)) {
-        Write-Host "Error: The defnied hub site '$hubUrl' is not marked as a hub site in SharePoint." -ForegroundColor Red
+    if ($null -eq (Get-SPOHubSite -Identity $Url)) {
+        Write-Host "Error: The defnied hub site '$Url' is not marked as a hub site in SharePoint." -ForegroundColor Red
         break
     }
 }
@@ -410,7 +447,7 @@ $replaceLogFile = $false
 Clear-Host
 
 # Check if the SharePoint PowerShell modules are installed on the computer
-Import-KrSpoModule
+Import-SpoModule
 
 # Test if CSV file exists
 if (-not(Test-Path -Path $csvFilePath)) {
@@ -425,10 +462,10 @@ Test-KrLogFile
 $sites = Get-KrSiteArray
 
 # Connect to customer SharePoint Online
-Connect-KrSharePoint
+Connect-SharePointOnline
 
 # Check if defined hub site is a hub site
-Test-KrHubSite
+Test-SpoHubSite
 
 # TODO: Test if user groups exists
 
